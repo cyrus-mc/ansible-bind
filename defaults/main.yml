@@ -1,0 +1,22 @@
+---
+# list of packages that should be installed/uninstalled
+bind_packages:
+  - name: bind-chroot
+    state: present
+  - name: bind-utils
+    state: present
+  - name: tcpdump
+    state: present
+
+bind_listen_port: 53
+bind_listen_ip: any
+
+# empty string disables forward only global option
+bind_global_forwarder: ''
+
+# DNSSEC settings (quote as unquoted yes/no = true/false)
+bind_dnssec_enable: 'no'
+bind_dnssec_validation: 'no'
+
+bind_allow_query: any
+bind_recursion: 'yes'

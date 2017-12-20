@@ -1,0 +1,10 @@
+- name: yum install/uninstall packages
+  yum: name={{ item.name }} state={{ item.state }}
+  with_items: "{{ bind_packages }}"
+
+- name: template named.conf
+  template: src=named.conf.j2 dest=/etc/named.conf
+  notify: restart-named
+
+- name: service enable and start
+  service: name=named state=started enabled=yes

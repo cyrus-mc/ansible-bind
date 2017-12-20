@@ -1,0 +1,61 @@
+#
+# named.conf
+# Provided by Red Hat bind package to configure the ISC BIND named(8) DNS
+# server as a caching only nameserver (as a localhost DNS resolver only).
+#
+# See /usr/share/doc/bind*/sample/ for example named configuration files.
+#
+options {
+  listen-on port 53 { {{ bind_listen_ip | default('any') }}; };
+  listen-on-v6 port 53 { ::1; };
+
+  directory          "/var/named";
+  dump-file          "/var/named/data/cache_dump.db";
+  statistics-file    "/var/named/data/named_stats.txt";
+  memstatistics-file "/var/named/data/named_mem_stats.txt";
+allow-query { {{ bind_allow_query }}; };
+  recursion {{ bind_recursion }};
+
+  dnssec-enable {{ bind_dnssec_enable }};
+  dnssec-validation {{ bind_dnssec_validation }};
+
+  /* path to ISC DLV key */
+  bindkeys-file "/etc/named.iscdlv.key";
+
+  managed-keys-directory "/var/named/dynamic";
+
+{% if bind_global_forwarder != '' %}
+  forwarders {
+    {{ bind_global_forwarder }};
+  };
+  forward only;
+{% endif %}
+
+};
+
+logging {
+  channel default_debug {
+    file "data/named.run";
+    severity dynamic;
+  };
+};
+
+{% for zone in bind_forward_zones %}
+{% if not bind_hostip | ipaddr(zone.vpc_cidr) %}
+zone "{{ zone.domain }}" {
+  type forward;
+  forwarders {
+    {{ zone.vpc_cidr | ipsubnet(24,0) | ipaddr('10') | ipaddr('address') }};
+    {{ zone.vpc_cidr | ipsubnet(24,1) | ipaddr('10') | ipaddr('address') }};
+  };
+};
+{% endif %}
+{% endfor %}
+
+zone "." IN {
+  type hint;
+  file "named.ca";
+};
+
+include "/etc/named.rfc1912.zones";
+include "/etc/named.root.key";
