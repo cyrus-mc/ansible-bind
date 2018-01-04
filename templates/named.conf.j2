@@ -23,7 +23,6 @@ allow-query { {{ bind_allow_query }}; };
   bindkeys-file "/etc/named.iscdlv.key";
 
   managed-keys-directory "/var/named/dynamic";
-
 {% if bind_global_forwarder != '' %}
   forwarders {
     {{ bind_global_forwarder }};
@@ -41,15 +40,19 @@ logging {
 };
 
 {% for zone in bind_forward_zones %}
-{% if not bind_hostip | ipaddr(zone.vpc_cidr) %}
 zone "{{ zone.domain }}" {
   type forward;
   forwarders {
+{% if zone.vpc_cidr is defined %}
     {{ zone.vpc_cidr | ipsubnet(24,0) | ipaddr('10') | ipaddr('address') }};
     {{ zone.vpc_cidr | ipsubnet(24,1) | ipaddr('10') | ipaddr('address') }};
+{% else %}
+{% for forwarder in zone.forwarders %}
+    {{ forwarder }};
+{% endfor %}
+{% endif %}
   };
 };
-{% endif %}
 {% endfor %}
 
 zone "." IN {
